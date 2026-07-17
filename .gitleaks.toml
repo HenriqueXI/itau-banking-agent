@@ -1,0 +1,27 @@
+# Gitleaks configuration — extends the bundled default ruleset.
+# Singular [allowlist] form for compatibility with the gitleaks version pinned
+# by gitleaks-action@v2 (the array-of-tables [[allowlists]] form needs a newer
+# gitleaks). A finding is allowed if it matches ANY path or regex below.
+title = "itau-agent gitleaks config"
+
+[extend]
+useDefault = true
+
+# Everything allowlisted here is an intentional demo/local placeholder, not a
+# secret: `.env.example` is the configuration contract, docker-compose ships the
+# same values as `${VAR:-default}` fallbacks, and the unit tests sign tokens
+# with throwaway keys. No value has a default in code and `.env` is gitignored,
+# so these are documentation. Real secrets elsewhere still fail the scan.
+[allowlist]
+description = "Demo/local placeholders (config contract, compose defaults, test fixtures)"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)infra/docker-compose\.yml$''',
+  '''(^|/)backend/tests/''',
+]
+regexes = [
+  '''0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef''',
+  '''lf_(pk|sk)_itau_agent_demo_\d+''',
+  '''dev-(jwt-secret|nextauth-secret|salt)-change-me''',
+  '''(langfuse123|demo123)''',
+]

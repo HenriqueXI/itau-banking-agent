@@ -1,0 +1,30 @@
+name: security-nightly
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  adversarial:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: backend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync
+      - name: Full permanent adversarial suite
+        run: uv run pytest -q -m adversarial
+      - name: bandit
+        run: uv run bandit -c pyproject.toml -r src
+      - name: pip-audit
+        run: |
+          uv export --no-dev --no-emit-project --format requirements-txt > requirements-audit.txt
+          uvx pip-audit -r requirements-audit.txt --disable-pip

@@ -1,0 +1,193 @@
+# RAG golden dataset (rag-tests.md). Versioned together with the KB fixtures in
+# backend/tests/fixtures/kb — a fixture edit re-runs the full suite.
+#
+# Categories & counts (rag-tests.md composition table):
+#   answerable_tariff >= 8 · answerable_faq >= 6 · answerable_regulation >= 6
+#   unanswerable >= 6 · ambiguous >= 4
+#
+# `expected_facts` are matched case/accent-insensitively against retrieved chunk
+# text. `ambiguous` cases assert the clarify path, which arrives with PRD-006
+# (the conversational wrapper); the retrieval-only harness reports them as
+# pending rather than scoring them.
+
+version: 1
+corpus: tests/fixtures/kb
+
+cases:
+  # ---------------------------------------------------------------- tariff
+  - id: tariff-001
+    category: answerable_tariff
+    question: "Qual é a taxa do empréstimo consignado para aposentados?"
+    expected_source: { document_id: tarifas_consignado, section: "Taxas por segmento" }
+    expected_facts: ["1,80%"]
+  - id: tariff-002
+    category: answerable_tariff
+    question: "Qual a taxa de juros do consignado para servidores públicos?"
+    expected_source: { document_id: tarifas_consignado, section: "Taxas por segmento" }
+    expected_facts: ["1,65%"]
+  - id: tariff-003
+    category: answerable_tariff
+    question: "Qual a taxa do consignado para trabalhadores CLT?"
+    expected_source: { document_id: tarifas_consignado, section: "Taxas por segmento" }
+    expected_facts: ["2,10%"]
+  - id: tariff-004
+    category: answerable_tariff
+    question: "Qual o prazo máximo do consignado para aposentados do INSS?"
+    expected_source: { document_id: tarifas_consignado, section: "Taxas por segmento" }
+    expected_facts: ["84 meses"]
+  - id: tariff-005
+    category: answerable_tariff
+    question: "Qual é a margem consignável máxima da renda mensal?"
+    expected_source: { document_id: tarifas_consignado, section: "Margem consignável" }
+    expected_facts: ["35%"]
+  - id: tariff-006
+    category: answerable_tariff
+    question: "Qual o valor da anuidade do cartão Platinum?"
+    expected_source: { document_id: tarifas_cartao, section: "Anuidade" }
+    expected_facts: ["600,00"]
+  - id: tariff-007
+    category: answerable_tariff
+    question: "Qual a taxa de juros do rotativo do cartão de crédito?"
+    expected_source: { document_id: tarifas_cartao, section: "Juros do rotativo" }
+    expected_facts: ["14,90%"]
+  - id: tariff-008
+    category: answerable_tariff
+    question: "Quanto custa a tarifa de saque com cartão de crédito?"
+    expected_source: { document_id: tarifas_cartao, section: "Saque com cartão de crédito" }
+    expected_facts: ["19,90"]
+  - id: tariff-009
+    category: answerable_tariff
+    question: "Qual é a anuidade do cartão Gold e em quantas parcelas?"
+    expected_source: { document_id: tarifas_cartao, section: "Anuidade" }
+    expected_facts: ["360,00", "12x"]
+
+  # ---------------------------------------------------------------- faq
+  - id: faq-001
+    category: answerable_faq
+    question: "O PIX tem custo para pessoa física?"
+    expected_source: { document_id: faq_pix, section: "O PIX tem custo para pessoa física?" }
+    expected_facts: ["gratuito"]
+  - id: faq-002
+    category: answerable_faq
+    question: "Como faço para cadastrar uma chave PIX?"
+    expected_source: { document_id: faq_pix, section: "Como cadastrar uma chave PIX?" }
+    expected_facts: ["chave aleatória"]
+  - id: faq-003
+    category: answerable_faq
+    question: "Como desbloquear meu cartão de crédito?"
+    expected_source: { document_id: faq_cartao, section: "Como desbloquear meu cartão?" }
+    expected_facts: ["Desbloquear"]
+  - id: faq-004
+    category: answerable_faq
+    question: "Como contestar uma compra que não reconheço no cartão?"
+    expected_source:
+      { document_id: faq_cartao, section: "Como contestar uma compra que não reconheço?" }
+    expected_facts: ["7 dias úteis"]
+  - id: faq-005
+    category: answerable_faq
+    question: "Posso aumentar o limite do meu cartão de crédito?"
+    expected_source: { document_id: faq_cartao, section: "Posso aumentar meu limite de crédito?" }
+    expected_facts: ["Limite"]
+  - id: faq-006
+    category: answerable_faq
+    question: "Qual a diferença entre a função crédito e a função débito?"
+    expected_source:
+      { document_id: faq_cartao, section: "O que é a função crédito e a função débito?" }
+    expected_facts: ["conta corrente"]
+  - id: faq-007
+    category: answerable_faq
+    question: "O que é o PIX e em que horários funciona?"
+    expected_source: { document_id: faq_pix, section: "O que é o PIX?" }
+    expected_facts: ["24 horas"]
+
+  # ---------------------------------------------------------------- regulation
+  - id: reg-001
+    category: answerable_regulation
+    question: "Qual é o limite diário do PIX para pessoa física?"
+    expected_source: { document_id: regras_pix, section: "Limite diário" }
+    expected_facts: ["5.000,00"]
+  - id: reg-002
+    category: answerable_regulation
+    question: "Qual o limite por transação do PIX no período noturno?"
+    expected_source:
+      { document_id: regras_pix, section: "Limite por transação no período noturno" }
+    expected_facts: ["1.000,00", "20h"]
+  - id: reg-003
+    category: answerable_regulation
+    question: "A partir de qual valor o PIX exige verificação adicional de segurança?"
+    expected_source:
+      { document_id: regras_pix, section: "Verificação de segurança para valores elevados" }
+    expected_facts: ["1.000,00"]
+  - id: reg-004
+    category: answerable_regulation
+    question: "Em quanto tempo passa a valer o aumento de limite solicitado?"
+    expected_source: { document_id: regras_pix, section: "Ajuste de limites" }
+    expected_facts: ["24 horas"]
+  - id: reg-005
+    category: answerable_regulation
+    question: "Qual é o limite diário para transferência por TED no canal digital?"
+    expected_source: { document_id: regras_limites_conta, section: "Transferência TED" }
+    expected_facts: ["10.000,00"]
+  - id: reg-006
+    category: answerable_regulation
+    question: "Qual o limite de saque em terminais de autoatendimento por dia?"
+    expected_source: { document_id: regras_limites_conta, section: "Saque em terminais" }
+    expected_facts: ["3.000,00"]
+  - id: reg-007
+    category: answerable_regulation
+    question: "Qual é a taxa de juros do cheque especial ao mês?"
+    expected_source: { document_id: regras_limites_conta, section: "Cheque especial" }
+    expected_facts: ["8,00%"]
+  - id: reg-008
+    category: answerable_regulation
+    question: "Em quais horários posso fazer uma TED?"
+    expected_source: { document_id: regras_limites_conta, section: "Transferência TED" }
+    expected_facts: ["17h"]
+
+  # ---------------------------------------------------------------- unanswerable
+  - id: unans-001
+    category: unanswerable
+    question: "Vocês oferecem financiamento de iate?"
+    expect_refusal: true
+  - id: unans-002
+    category: unanswerable
+    question: "Qual o valor do seguro para drones agrícolas?"
+    expect_refusal: true
+  - id: unans-003
+    category: unanswerable
+    question: "Como abro uma conta em francos suíços em Zurique?"
+    expect_refusal: true
+  - id: unans-004
+    category: unanswerable
+    question: "Vocês têm consórcio de aeronaves executivas?"
+    expect_refusal: true
+  - id: unans-005
+    category: unanswerable
+    question: "Qual a cotação do bitcoin na corretora de vocês?"
+    expect_refusal: true
+  - id: unans-006
+    category: unanswerable
+    question: "Qual o prêmio do seguro de vida para paraquedistas?"
+    expect_refusal: true
+  - id: unans-007
+    category: unanswerable
+    question: "Como faço para alugar um cofre no aeroporto de Guarulhos?"
+    expect_refusal: true
+
+  # ---------------------------------------------------------------- ambiguous
+  - id: ambig-001
+    category: ambiguous
+    question: "Qual é a taxa?"
+    expect_clarification: true
+  - id: ambig-002
+    category: ambiguous
+    question: "Qual o meu limite?"
+    expect_clarification: true
+  - id: ambig-003
+    category: ambiguous
+    question: "Quanto custa?"
+    expect_clarification: true
+  - id: ambig-004
+    category: ambiguous
+    question: "Como faço para aumentar?"
+    expect_clarification: true

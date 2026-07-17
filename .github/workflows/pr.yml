@@ -1,0 +1,188 @@
+name: pr
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      adversarial: ${{ steps.filter.outputs.adversarial }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            adversarial:
+              - 'backend/src/conversation/**'
+              - 'backend/src/identity_access/**'
+              - 'backend/src/banking/**'
+              - 'backend/src/audit/**'
+              - 'backend/src/api/**'
+              - 'backend/src/mcp_server/**'
+              - 'backend/tests/**'
+              - 'backend/migrations/**'
+              - 'backend/pyproject.toml'
+              - '.github/workflows/**'
+
+  # ---- Stage 1: static ----------------------------------------------------
+  static:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: backend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync
+      - name: ruff lint
+        run: uv run ruff check src tests migrations
+      - name: ruff format
+        run: uv run ruff format --check src tests migrations
+      - name: mypy --strict (domain/application; adapters standard)
+        run: uv run mypy
+      - name: import-linter (hexagonal contracts)
+        run: uv run lint-imports
+
+  frontend-static:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm audit --audit-level=high
+      - run: npm run build
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm test
+
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  # ---- Stage 2: security ----------------------------------------------------
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: pip-audit (high+ blocks)
+        working-directory: backend
+        run: |
+          uv export --no-dev --no-emit-project --format requirements-txt > requirements-audit.txt
+          # PYSEC-2026-311 (chromadb): pre-auth code injection via a server-side
+          # trust_remote_code=true collections call. Affected 1.0.0..1.5.9 with no
+          # fixed release yet, so no upgrade clears it. Not reachable here: the
+          # Chroma server is compose-internal (no published port in base compose),
+          # we call it only as a client, and never set trust_remote_code. Tracked
+          # as TD-16 — drop this ignore when upstream ships a fix.
+          uvx pip-audit -r requirements-audit.txt --disable-pip --ignore-vuln PYSEC-2026-311
+      - name: bandit
+        working-directory: backend
+        run: |
+          uv sync
+          uv run bandit -c pyproject.toml -r src
+
+  # ---- Stage 3: unit tests ---------------------------------------------------
+  unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: backend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync
+      - name: pytest (unit + architecture, fake ports, no infra)
+        run: uv run pytest -q --cov=src --cov-report=term-missing
+
+  # ---- Stage 4: integration ---------------------------------------------------
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: backend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync
+      - name: pytest -m integration (testcontainers)
+        run: uv run pytest -q -m integration
+
+  # ---- Stage 5: conditional adversarial suite -------------------------------
+  adversarial:
+    needs: changes
+    if: needs.changes.outputs.adversarial == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: backend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync
+      - name: pytest -m adversarial (security regression suite)
+        run: uv run pytest -q -m adversarial
+
+  # ---- Stage 6: build ------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: compose config validation
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env -f infra/docker-compose.yml config -q
+      - uses: docker/setup-buildx-action@v3
+      - name: docker build backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/backend.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

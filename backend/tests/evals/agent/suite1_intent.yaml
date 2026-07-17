@@ -1,0 +1,327 @@
+# Suite 1 — intent routing & extraction (agent-tests.md §1).
+# Gates: >= 95% intent, >= 90% full extraction. Misrouting into an operation the
+# user did not ask for is a critical failure (weight 10x).
+#
+# `params` are compared semantically: amounts numerically, strings case-folded.
+# `target` is "self" (own resource), a third-party name/id, or null.
+
+cases:
+  # --- kb_query: canonical -----------------------------------------------------
+  - id: kb-01
+    utterance: "Qual a taxa do empréstimo consignado para aposentados?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-02
+    utterance: "Quanto custa a anuidade do cartão?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-03
+    utterance: "Quais são os limites do PIX por dia?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-04
+    utterance: "Qual a tarifa de TED?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-05
+    utterance: "Como funciona a portabilidade de salário?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-06
+    utterance: "me explica as regras do consignado pra quem é servidor público"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-07
+    utterance: "tem taxa pra fazer pix?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-08
+    utterance: "quais documentos preciso pra abrir conta?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-09
+    utterance: "O cartão tem seguro viagem incluso?"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: kb-10
+    utterance: "qual o prazo pra contestar uma compra?"
+    intent: kb_query
+    tool: buscar_conhecimento
+
+  # --- view_limit --------------------------------------------------------------
+  - id: limit-01
+    utterance: "Qual meu limite?"
+    intent: view_limit
+    tool: consultar_limite
+    target: self
+  - id: limit-02
+    utterance: "me vê o limite aí"
+    intent: view_limit
+    tool: consultar_limite
+    target: self
+  - id: limit-03
+    utterance: "Quanto tenho de limite disponível no cartão?"
+    intent: view_limit
+    tool: consultar_limite
+    target: self
+  - id: limit-04
+    utterance: "qual é o limite do meu cartão final 4242?"
+    intent: view_limit
+    tool: consultar_limite
+    target: self
+  - id: limit-05
+    utterance: "consulta pra mim o limite por favor"
+    intent: view_limit
+    tool: consultar_limite
+    target: self
+
+  # --- view_balance ------------------------------------------------------------
+  - id: balance-01
+    utterance: "Qual o saldo da minha conta?"
+    intent: view_balance
+    tool: consultar_saldo
+    target: self
+  - id: balance-02
+    utterance: "quanto tenho na conta?"
+    intent: view_balance
+    tool: consultar_saldo
+    target: self
+  - id: balance-03
+    utterance: "tem dinheiro suficiente aí pra pagar uma conta de 200?"
+    intent: view_balance
+    tool: consultar_saldo
+    target: self
+  - id: balance-04
+    utterance: "saldo"
+    intent: view_balance
+    tool: consultar_saldo
+    target: self
+
+  # --- view_profile ------------------------------------------------------------
+  - id: profile-01
+    utterance: "Quais são os meus dados cadastrais?"
+    intent: view_profile
+    tool: consultar_perfil
+    target: self
+  - id: profile-02
+    utterance: "me mostra meu perfil"
+    intent: view_profile
+    tool: consultar_perfil
+    target: self
+  - id: profile-03
+    utterance: "qual email está cadastrado na minha conta?"
+    intent: view_profile
+    tool: consultar_perfil
+    target: self
+
+  # --- third-party targets: intent is right, target must NOT be self -----------
+  - id: third-01
+    utterance: "Qual o saldo do João Silva?"
+    intent: view_balance
+    tool: consultar_saldo
+    target: third_party
+  - id: third-02
+    utterance: "me mostra os dados do cliente CPF 123.456.789-00"
+    intent: view_profile
+    tool: consultar_perfil
+    target: third_party
+  - id: third-03
+    utterance: "qual o limite do cartão da Maria Souza?"
+    intent: view_limit
+    tool: consultar_limite
+    target: third_party
+
+  # --- update_card_limit: amount formats ---------------------------------------
+  - id: uplimit-01
+    utterance: "Quero aumentar meu limite para 10 mil"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 10000}
+    target: self
+  - id: uplimit-02
+    utterance: "Aumenta o limite do cartão para R$ 10.000,00"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 10000}
+    target: self
+  - id: uplimit-03
+    utterance: "sobe meu limite pra dez mil reais"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 10000}
+    target: self
+  - id: uplimit-04
+    utterance: "preciso de um limite de 2500 no cartão"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 2500}
+    target: self
+  - id: uplimit-05
+    utterance: "quero reduzir meu limite para 1.000"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 1000}
+    target: self
+  - id: uplimit-06
+    utterance: "dá pra aumentar o limite? quero 15 mil"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 15000}
+    target: self
+  - id: uplimit-07
+    utterance: "aumenta meu limite"
+    intent: update_card_limit
+    tool: alterar_limite
+    expect_clarify: true   # no amount → ask, never guess
+    target: self
+
+  # --- create_pix --------------------------------------------------------------
+  - id: pix-01
+    utterance: "Faz um pix de 500 reais para a chave joao@email.com"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 500, pix_key: "joao@email.com"}
+    target: self
+  - id: pix-02
+    utterance: "manda 200 pila pro cpf 123.456.789-00"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 200, pix_key: "123.456.789-00"}
+    target: self
+  - id: pix-03
+    utterance: "transfere R$ 1.250,50 via pix pra chave 11999998888"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 1250.50, pix_key: "11999998888"}
+    target: self
+  - id: pix-04
+    utterance: "manda um pix de 500 pro meu irmão"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 500}
+    expect_clarify: true   # missing pix_key → clarify (agent-tests.md §1)
+    target: self
+  - id: pix-05
+    utterance: "quero fazer um pix"
+    intent: create_pix
+    tool: fazer_pix
+    expect_clarify: true
+    target: self
+  - id: pix-06
+    utterance: "pix de dois mil para a chave aleatoria abc-123-def"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 2000, pix_key: "abc-123-def"}
+    target: self
+
+  # --- smalltalk / out of scope ------------------------------------------------
+  - id: small-01
+    utterance: "Bom dia!"
+    intent: smalltalk
+  - id: small-02
+    utterance: "previsão do tempo pra amanhã?"
+    intent: smalltalk
+  - id: small-03
+    utterance: "obrigado, valeu!"
+    intent: smalltalk
+  - id: small-04
+    utterance: "quem ganhou o jogo ontem?"
+    intent: smalltalk
+  - id: small-05
+    utterance: "me escreve um poema sobre o mar"
+    intent: smalltalk
+  - id: small-06
+    utterance: "você é uma IA?"
+    intent: smalltalk
+  - id: small-07
+    utterance: "qual a capital da França?"
+    intent: smalltalk
+
+  # --- ambiguous / unclear -----------------------------------------------------
+  - id: unclear-01
+    utterance: "quero mudar"
+    intent: unclear
+    expect_clarify: true
+  - id: unclear-02
+    utterance: "ajuda aí"
+    intent: unclear
+    expect_clarify: true
+  - id: unclear-03
+    utterance: "não está funcionando"
+    intent: unclear
+    expect_clarify: true
+
+  # --- colloquial / noisy phrasing ---------------------------------------------
+  - id: colloq-01
+    utterance: "e aí, dá pra ver quanto sobrou de limite?"
+    intent: view_limit
+    tool: consultar_limite
+    target: self
+  - id: colloq-02
+    utterance: "manda 50 conto pro pix 11988887777"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 50, pix_key: "11988887777"}
+    target: self
+  - id: colloq-03
+    utterance: "cê pode aumentar meu limite pra 3 mil?"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 3000}
+    target: self
+  - id: colloq-04
+    utterance: "quanto que é a taxa do consignado mesmo??"
+    intent: kb_query
+    tool: buscar_conhecimento
+  - id: colloq-05
+    utterance: "vê meu saldo rapidinho"
+    intent: view_balance
+    tool: consultar_saldo
+    target: self
+  - id: colloq-06
+    utterance: "meus dados tão certos aí no cadastro?"
+    intent: view_profile
+    tool: consultar_perfil
+    target: self
+
+  # --- near-miss: must NOT route into an operation (critical if it does) --------
+  - id: nearmiss-01
+    utterance: "Como faço para aumentar meu limite?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [update_card_limit]
+  - id: nearmiss-02
+    utterance: "Quanto tempo demora um pix?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [create_pix]
+  - id: nearmiss-03
+    utterance: "É seguro fazer pix pra desconhecido?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [create_pix]
+  - id: nearmiss-04
+    utterance: "o que acontece se eu estourar o limite?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [update_card_limit]
+  - id: nearmiss-05
+    utterance: "vocês cobram taxa pra aumentar limite?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [update_card_limit]
+  - id: nearmiss-06
+    utterance: "quais os limites de pix à noite?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [create_pix]
+  - id: nearmiss-07
+    utterance: "onde vejo meu limite no app?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [update_card_limit]
+  - id: nearmiss-08
+    utterance: "pix pode ser cancelado?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    critical_not: [create_pix]

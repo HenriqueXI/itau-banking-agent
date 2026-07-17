@@ -1,0 +1,87 @@
+# Suite 2 — reference resolution (agent-tests.md §2, US-2.1).
+# Gate: 100% on the canonical case (challenge-explicit), >= 85% overall.
+#
+# Each script replays prior turns into state, then evaluates `understand` on the
+# final user message. `assistant` turns are the context the resolution needs.
+
+cases:
+  - id: ref-canonical
+    canonical: true
+    history:
+      - {role: user, content: "Qual meu limite?"}
+      - {role: assistant, content: "O limite do seu cartão final 4242 é R$ 5.000,00."}
+    utterance: "E aumenta para 10 mil"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 10000}
+    references_resolved: true
+    expect_clarify: false   # "no re-ask": the amount and the card are both known
+
+  - id: ref-kb-topic-carry
+    history:
+      - {role: user, content: "Qual a taxa do consignado para aposentados?"}
+      - {role: assistant, content: "Para aposentados do INSS a taxa é 1,49% a.m. 【Tarifas 2026 — Consignado】"}
+    utterance: "e para não aposentados?"
+    intent: kb_query
+    tool: buscar_conhecimento
+    references_resolved: true
+    query_contains: ["consignado"]
+
+  - id: ref-pix-key-carried
+    history:
+      - {role: user, content: "Qual meu limite?"}
+      - {role: assistant, content: "Seu limite é R$ 5.000,00."}
+      - {role: user, content: "a chave pix do meu irmão é irmao@email.com, guarda aí"}
+      - {role: assistant, content: "Anotado: irmao@email.com."}
+    utterance: "manda 200 pro meu irmão"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 200, pix_key: "irmao@email.com"}
+    references_resolved: true
+
+  - id: ref-two-cards-ambiguous
+    history:
+      - {role: user, content: "Quais cartões eu tenho?"}
+      - {role: assistant, content: "Você tem dois cartões: final 4242 (Platinum) e final 8888 (Gold)."}
+    utterance: "aumenta o limite"
+    intent: update_card_limit
+    tool: alterar_limite
+    expect_clarify: true    # US-2.3: which card? ask, don't pick
+    references_resolved: true
+
+  - id: ref-param-change-after-pending
+    history:
+      - {role: user, content: "Faz um pix de 500 para joao@email.com"}
+      - {role: assistant, content: "Confirma o PIX de R$ 500,00 para joao@email.com?"}
+    utterance: "melhor 300"
+    intent: create_pix
+    tool: fazer_pix
+    params: {amount: 300, pix_key: "joao@email.com"}
+    references_resolved: true   # BR-6.1: new params → new flow, key carried
+
+  - id: ref-balance-then-limit
+    history:
+      - {role: user, content: "Qual o saldo da minha conta?"}
+      - {role: assistant, content: "Seu saldo é R$ 3.200,00."}
+    utterance: "e o limite?"
+    intent: view_limit
+    tool: consultar_limite
+    references_resolved: true
+
+  - id: ref-no-false-carry
+    history:
+      - {role: user, content: "Qual a taxa do consignado?"}
+      - {role: assistant, content: "A taxa é 1,49% a.m. 【Tarifas 2026 — Consignado】"}
+    utterance: "Bom dia!"
+    intent: smalltalk
+    references_resolved: false   # nothing to carry — don't invent a follow-up
+
+  - id: ref-amount-worded-followup
+    history:
+      - {role: user, content: "Qual meu limite?"}
+      - {role: assistant, content: "Seu limite é R$ 5.000,00."}
+    utterance: "aumenta pra quinze mil"
+    intent: update_card_limit
+    tool: alterar_limite
+    params: {amount: 15000}
+    references_resolved: true

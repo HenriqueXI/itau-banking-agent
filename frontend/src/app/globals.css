@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  color-scheme: light;
+  --background: oklch(0.977 0.003 80);
+  --foreground: oklch(0.24 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.02 260);
+  --muted: oklch(0.952 0.004 80);
+  --muted-foreground: oklch(0.47 0.018 260);
+  --border: oklch(0.902 0.006 80);
+  --input: oklch(0.902 0.006 80);
+  --primary: oklch(0.66 0.185 46);
+  --primary-foreground: oklch(0.99 0 0);
+  --accent: oklch(0.955 0.022 60);
+  --accent-foreground: oklch(0.24 0.02 260);
+  --ring: oklch(0.66 0.185 46);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.56 0.13 150);
+  --warning: oklch(0.72 0.14 80);
+  --role-customer: oklch(0.46 0.02 260);
+  --role-manager: oklch(0.5 0.14 255);
+  --role-admin: oklch(0.55 0.12 75);
+  --radius: 0.75rem;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.205 0.02 250);
+  --foreground: oklch(0.93 0.008 250);
+  --card: oklch(0.245 0.02 250);
+  --card-foreground: oklch(0.93 0.008 250);
+  --popover: oklch(0.245 0.02 250);
+  --popover-foreground: oklch(0.93 0.008 250);
+  --muted: oklch(0.285 0.02 250);
+  --muted-foreground: oklch(0.7 0.015 250);
+  --border: oklch(0.325 0.02 250);
+  --input: oklch(0.325 0.02 250);
+  --primary: oklch(0.72 0.17 50);
+  --primary-foreground: oklch(0.17 0.02 250);
+  --accent: oklch(0.3 0.03 55);
+  --accent-foreground: oklch(0.93 0.008 250);
+  --ring: oklch(0.72 0.17 50);
+  --destructive: oklch(0.65 0.19 25);
+  --destructive-foreground: oklch(0.17 0.02 250);
+  --success: oklch(0.7 0.13 150);
+  --warning: oklch(0.78 0.13 80);
+  --role-customer: oklch(0.75 0.015 250);
+  --role-manager: oklch(0.72 0.12 255);
+  --role-admin: oklch(0.78 0.12 80);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-role-customer: var(--role-customer);
+  --color-role-manager: var(--role-manager);
+  --color-role-admin: var(--role-admin);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --animate-message-in: message-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-card-in: card-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-shake: shake 320ms ease-in-out;
+  --animate-caret: caret-blink 1s steps(1) infinite;
+  --animate-fade-in: fade-in 180ms ease-out both;
+  --animate-slide-in-right: slide-in-right 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+@keyframes shake {
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(2rem); }
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { cursor: pointer; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
